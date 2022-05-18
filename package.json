@@ -1,13 +1,10 @@
 {
-  "name": "hardhat-deploy",
-  "version": "0.11.5",
+  "name": "@kreskolabs/hardhat-deploy",
+  "version": "1.0.0",
   "description": "Hardhat Plugin For Replicable Deployments And Tests",
   "repository": "github:wighawag/hardhat-deploy",
   "author": "wighawag",
   "license": "MIT",
-  "publishConfig": {
-    "access": "public"
-  },
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
   "keywords": [
