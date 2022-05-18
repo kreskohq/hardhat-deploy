@@ -1794,7 +1794,7 @@ Note that in this case, the contract deployment will not behave the same if depl
     options: DiamondOptions
   ): Promise<DeployResult> {
     let proxy: Deployment | undefined;
-    const proxyName = name + '_DiamondProxy';
+    const proxyName = name;
     const oldDeployment = await getDeploymentOrNUll(name);
     if (oldDeployment) {
       proxy = await getDeployment(proxyName);
@@ -1826,11 +1826,9 @@ Note that in this case, the contract deployment will not behave the same if depl
     const newSelectors: string[] = [];
     const facetSnapshot: Facet[] = [];
     let oldFacets: Facet[] = [];
-    if (proxy) {
-      const diamondProxy = new Contract(proxy.address, proxy.abi, provider);
-      oldFacets = await diamondProxy.facets();
+    if (proxy && proxy.facets) {
+      oldFacets = proxy.facets;
     }
-    // console.log({ oldFacets: JSON.stringify(oldFacets, null, "  ") });
 
     const facetsSet = [...options.facets];
     if (options.defaultCutFacet === undefined || options.defaultCutFacet) {
@@ -1838,7 +1836,7 @@ Note that in this case, the contract deployment will not behave the same if depl
         name: '_DefaultDiamondCutFacet',
         contract: diamondCutFacet,
         args: [],
-        deterministic: true,
+        deterministic: !!options.deterministicSalt,
       });
     }
     if (
@@ -1849,14 +1847,14 @@ Note that in this case, the contract deployment will not behave the same if depl
         name: '_DefaultDiamondOwnershipFacet',
         contract: ownershipFacet,
         args: [],
-        deterministic: true,
+        deterministic: !!options.deterministicSalt,
       });
     }
     facetsSet.push({
       name: '_DefaultDiamondLoupeFacet',
       contract: diamondLoupeFacet,
       args: [],
-      deterministic: true,
+      deterministic: !!options.deterministicSalt,
     });
 
     let changesDetected = !oldDeployment;
@@ -2330,8 +2328,7 @@ Note that in this case, the contract deployment will not behave the same if depl
             address: expectedAddress,
             args: diamondConstructorArgs,
           };
-          await saveDeployment(proxyName, proxy);
-          await saveDeployment(name, {
+          await saveDeployment(proxyName, {
             ...proxy,
             linkedData: options.linkedData,
             facets: facetSnapshot,
@@ -2356,8 +2353,7 @@ Note that in this case, the contract deployment will not behave the same if depl
             value: options.value,
           });
 
-          await saveDeployment(proxyName, {...proxy, abi});
-          await saveDeployment(name, {
+          await saveDeployment(proxyName, {
             ...proxy,
             linkedData: options.linkedData,
             facets: facetSnapshot,
