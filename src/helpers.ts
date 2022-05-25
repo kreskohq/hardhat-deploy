@@ -614,11 +614,11 @@ export function addHelpers(
     );
     await setupGasPrice(unsignedTx);
     await setupNonce(from, unsignedTx);
- 
+
     // Temporary workaround for https://github.com/ethers-io/ethers.js/issues/2078
     // TODO: Remove me when LedgerSigner adds proper support for 1559 txns
     if (hardwareWallet === 'ledger') {
-      unsignedTx.type = 1
+      unsignedTx.type = 1;
     }
 
     if (unknown) {
@@ -1850,12 +1850,14 @@ Note that in this case, the contract deployment will not behave the same if depl
         deterministic: !!options.deterministicSalt,
       });
     }
-    facetsSet.push({
-      name: '_DefaultDiamondLoupeFacet',
-      contract: diamondLoupeFacet,
-      args: [],
-      deterministic: !!options.deterministicSalt,
-    });
+    if (options.defaultLoupeFacet === undefined || options.defaultLoupeFacet) {
+      facetsSet.push({
+        name: '_DefaultDiamondLoupeFacet',
+        contract: diamondLoupeFacet,
+        args: [],
+        deterministic: !!options.deterministicSalt,
+      });
+    }
 
     let changesDetected = !oldDeployment;
     let abi: any[] = diamondArtifact.abi.concat([]);
