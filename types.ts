@@ -78,12 +78,9 @@ export type FacetOptions = {
 };
 export type DiamondFacets = Array<string> | Array<FacetOptions>;
 export interface DiamondOptions extends TxOptions {
-  diamondContract?: string | ArtifactData; // TODO
+  diamondContract: string | ExtendedArtifact;
   diamondContractArgs?: any[];
-  owner?: Address;
-  defaultOwnershipFacet?: boolean;
-  defaultCutFacet?: boolean;
-  defaultLoupeFacet?: boolean;
+  owner: Address;
   facets: DiamondFacets;
   log?: boolean;
   libraries?: Libraries;

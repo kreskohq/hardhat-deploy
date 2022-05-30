@@ -1799,9 +1799,6 @@ Note that in this case, the contract deployment will not behave the same if depl
     if (oldDeployment) {
       proxy = await getDeployment(proxyName);
     }
-    if (proxy && proxy.deployedBytecode === oldDiamonBase.deployedBytecode) {
-      return _old_deployViaDiamondProxy(name, options);
-    }
 
     const deployResult = _checkUpgradeIndex(
       oldDeployment,
@@ -1810,16 +1807,13 @@ Note that in this case, the contract deployment will not behave the same if depl
     if (deployResult) {
       return deployResult;
     }
-
-    let diamondArtifact: ExtendedArtifact = diamondBase;
-    if (options.diamondContract) {
-      if (typeof options.diamondContract === 'string') {
-        diamondArtifact = await partialExtension.getExtendedArtifact(
-          options.diamondContract
-        );
-      } else {
-        diamondArtifact = options.diamondContract;
-      }
+    let diamondArtifact: ExtendedArtifact;
+    if (typeof options.diamondContract === 'string') {
+      diamondArtifact = await partialExtension.getExtendedArtifact(
+        options.diamondContract
+      );
+    } else {
+      diamondArtifact = options.diamondContract;
     }
 
     const {address: owner} = getDiamondOwner(options);
@@ -1831,33 +1825,6 @@ Note that in this case, the contract deployment will not behave the same if depl
     }
 
     const facetsSet = [...options.facets];
-    if (options.defaultCutFacet === undefined || options.defaultCutFacet) {
-      facetsSet.push({
-        name: '_DefaultDiamondCutFacet',
-        contract: diamondCutFacet,
-        args: [],
-        deterministic: !!options.deterministicSalt,
-      });
-    }
-    if (
-      options.defaultOwnershipFacet === undefined ||
-      options.defaultOwnershipFacet
-    ) {
-      facetsSet.push({
-        name: '_DefaultDiamondOwnershipFacet',
-        contract: ownershipFacet,
-        args: [],
-        deterministic: !!options.deterministicSalt,
-      });
-    }
-    if (options.defaultLoupeFacet === undefined || options.defaultLoupeFacet) {
-      facetsSet.push({
-        name: '_DefaultDiamondLoupeFacet',
-        contract: diamondLoupeFacet,
-        args: [],
-        deterministic: !!options.deterministicSalt,
-      });
-    }
 
     let changesDetected = !oldDeployment;
     let abi: any[] = diamondArtifact.abi.concat([]);
@@ -1941,12 +1908,10 @@ Note that in this case, the contract deployment will not behave the same if depl
         log: options.log,
         libraries,
         linkedData,
-        args: facetArgs,
         deterministicDeployment: deterministicFacet,
       });
       let facetAddress: string;
       if (implementation.newlyDeployed) {
-        // console.log(`facet ${facet} deployed at ${implementation.address}`);
         facetAddress = implementation.address;
         const newFacet = {
           facetAddress,
@@ -2167,75 +2132,13 @@ Note that in this case, the contract deployment will not behave the same if depl
           '{initializations}',
         ];
 
-        const initializationsArgIndex =
-          diamondConstructorArgs.indexOf('{initializations}');
-        const erc165InitArgIndex = diamondConstructorArgs.indexOf('{erc165}');
-        const initArgIndex = diamondConstructorArgs.indexOf('{init}');
-        const initAddressArgIndex =
-          diamondConstructorArgs.indexOf('{initAddress}');
-        const initDataArgIndex = diamondConstructorArgs.indexOf('{initData}');
+        // const initializationsArgIndex =
+        //   diamondConstructorArgs.indexOf('{initializations}');
+        // const initDataArgIndex = diamondConstructorArgs.indexOf('{initData}');
         const ownerArgIndex = diamondConstructorArgs.indexOf('{owner}');
         const facetCutsArgIndex = diamondConstructorArgs.indexOf('{facetCuts}');
-        if (
-          initializationsArgIndex >= 0 &&
-          (initArgIndex >= 0 ||
-            erc165InitArgIndex >= 0 ||
-            initDataArgIndex >= 0)
-        ) {
-          throw new Error(
-            `{initializations} found but also one or more of {init} {erc165} {initData}`
-          );
-        }
-
         // TODO option to add more to the list
         // else mechanism to set it up differently ? LoupeFacet without supportsInterface
-        const interfaceList = ['0x48e2b093'];
-        if (options.defaultCutFacet) {
-          interfaceList.push('0x1f931c1c');
-        }
-        if (options.defaultOwnershipFacet) {
-          interfaceList.push('0x7f5828d0');
-        }
-
-        if (initializationsArgIndex >= 0 || erc165InitArgIndex >= 0) {
-          const diamondERC165InitDeployment = await _deployOne(
-            '_DefaultDiamondERC165Init',
-            {
-              from: options.from,
-              deterministicDeployment: true,
-              contract: diamondERC165Init,
-              autoMine: options.autoMine,
-              estimateGasExtra: options.estimateGasExtra,
-              estimatedGasLimit: options.estimatedGasLimit,
-              gasPrice: options.gasPrice,
-              maxFeePerGas: options.maxFeePerGas,
-              maxPriorityFeePerGas: options.maxPriorityFeePerGas,
-              log: options.log,
-            }
-          );
-          const diamondERC165InitContract = new Contract(
-            diamondERC165InitDeployment.address,
-            diamondERC165InitDeployment.abi
-          );
-          const interfaceInitTx =
-            await diamondERC165InitContract.populateTransaction.setERC165(
-              interfaceList,
-              []
-            );
-          if (initializationsArgIndex >= 0) {
-            const initializations = [];
-            initializations.push({
-              initContract: interfaceInitTx.to,
-              initData: interfaceInitTx.data,
-            });
-            diamondConstructorArgs[initializationsArgIndex] = initializations;
-          } else {
-            diamondConstructorArgs[erc165InitArgIndex] = {
-              initContract: interfaceInitTx.to,
-              initData: interfaceInitTx.data,
-            };
-          }
-        }
 
         if (ownerArgIndex >= 0) {
           diamondConstructorArgs[ownerArgIndex] = owner;
@@ -2247,33 +2150,6 @@ Note that in this case, the contract deployment will not behave the same if depl
           diamondConstructorArgs[facetCutsArgIndex] = facetCuts;
         } else {
           throw new Error(`diamond constructor needs a {facetCuts} argument`);
-        }
-
-        if (executeData) {
-          if (initializationsArgIndex >= 0) {
-            if (executeData !== '0x') {
-              diamondConstructorArgs[initializationsArgIndex].push({
-                initContract: executeAddress,
-                initData: executeData,
-              });
-            }
-          } else {
-            if (initArgIndex >= 0) {
-              diamondConstructorArgs[initArgIndex] = {
-                initContract: executeAddress,
-                initData: executeData,
-              };
-            } else if (initDataArgIndex >= 0) {
-              diamondConstructorArgs[initDataArgIndex] = executeData;
-              if (initAddressArgIndex >= 0) {
-                diamondConstructorArgs[initAddressArgIndex] = executeAddress;
-              }
-            } else {
-              throw new Error(
-                `no {init} or {initData} found in list of args even though execute is set in option`
-              );
-            }
-          }
         }
 
         let deterministicDiamondAlreadyDeployed = false;
