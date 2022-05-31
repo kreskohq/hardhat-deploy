@@ -2132,9 +2132,8 @@ Note that in this case, the contract deployment will not behave the same if depl
           '{initializations}',
         ];
 
-        // const initializationsArgIndex =
-        //   diamondConstructorArgs.indexOf('{initializations}');
-        // const initDataArgIndex = diamondConstructorArgs.indexOf('{initData}');
+        const initializationsArgIndex =
+          diamondConstructorArgs.indexOf('{initializations}');
         const ownerArgIndex = diamondConstructorArgs.indexOf('{owner}');
         const facetCutsArgIndex = diamondConstructorArgs.indexOf('{facetCuts}');
         // TODO option to add more to the list
@@ -2152,7 +2151,8 @@ Note that in this case, the contract deployment will not behave the same if depl
           throw new Error(`diamond constructor needs a {facetCuts} argument`);
         }
 
-        diamondConstructorArgs.push(options.initializations || []);
+        diamondConstructorArgs[initializationsArgIndex] =
+          options.initializations || [];
 
         let deterministicDiamondAlreadyDeployed = false;
         let expectedAddress: string | undefined = undefined;
