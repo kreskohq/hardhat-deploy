@@ -2152,6 +2152,8 @@ Note that in this case, the contract deployment will not behave the same if depl
           throw new Error(`diamond constructor needs a {facetCuts} argument`);
         }
 
+        diamondConstructorArgs.push(options.initializations || []);
+
         let deterministicDiamondAlreadyDeployed = false;
         let expectedAddress: string | undefined = undefined;
         let salt =
@@ -3063,6 +3065,7 @@ data: ${data}
       let linkedData = options.linkedData;
       let libraries = options.libraries;
       let facetArgs = options.facetsArgs;
+      const initializations = options.initializations;
       let argsSpecific = false;
       if (typeof facet === 'string') {
         artifact = await partialExtension.getExtendedArtifact(facet);

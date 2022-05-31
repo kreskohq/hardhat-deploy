@@ -7,6 +7,7 @@ import {
   HardhatRuntimeEnvironment,
 } from 'hardhat/types';
 import type {BigNumber} from '@ethersproject/bignumber';
+import {BytesLike} from 'ethers';
 
 export type ExtendedArtifact = {
   abi: any[];
@@ -82,6 +83,7 @@ export interface DiamondOptions extends TxOptions {
   diamondContractArgs?: any[];
   owner: Address;
   facets: DiamondFacets;
+  initializations?: [string, BytesLike][];
   log?: boolean;
   libraries?: Libraries;
   linkedData?: any; // JSONable ?
